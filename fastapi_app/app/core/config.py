@@ -1,26 +1,27 @@
-from pydantic import BaseModel
+from pydantic import BaseSettings
 from typing import Optional
-import os
-from dotenv import load_dotenv
 
-# Load environment variables
-load_dotenv()
 
-class Settings(BaseModel):
+class Settings(BaseSettings):
     """Application settings"""
-    
+
     # MongoDB settings
-    MONGODB_URL: str = os.getenv("MONGODB_URL", "mongodb://localhost:27017")
-    DATABASE_NAME: str = os.getenv("DATABASE_NAME", "recruitment_portal")
-    
+    MONGODB_URL: str = "mongodb+srv://backend_user:Ecell@2025@cluster0.blyrgyf.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+    DATABASE_NAME: str = "recruitment_portal"
+
     # Application settings
-    APP_NAME: str = os.getenv("APP_NAME", "Recruitment Portal")
-    APP_VERSION: str = os.getenv("APP_VERSION", "1.0.0")
-    API_PREFIX: str = os.getenv("API_PREFIX", "/api")
-    
+    APP_NAME: str = "Recruitment Portal"
+    APP_VERSION: str = "1.0.0"
+    API_PREFIX: str = "/api"
+
     # JWT settings
-    SECRET_KEY: str = os.getenv("SECRET_KEY", "your-secret-key")  # Change this in production
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
+    SECRET_KEY: str = "your-secret-key"  
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+
+    class Config:
+        env_file = ".env"
+        case_sensitive = True
+
 
 # Create global settings object
 settings = Settings()

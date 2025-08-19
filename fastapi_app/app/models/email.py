@@ -5,7 +5,7 @@ from ..utils.enums import EmailStatus
 
 class Email(Model):
     """Email model for tracking communication"""
-    email: List[str]  # List of recipient email addresses
+    recipients: List[str]  # List of recipient email addresses
     status: EmailStatus
     message: str
     subject: str
