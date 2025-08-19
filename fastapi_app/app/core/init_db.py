@@ -26,7 +26,8 @@ async def connect_to_mongo():
 
     # Create ODMantic engine
     database.engine = AIOEngine(database=database_name, client=database.client)
-    
+    # engine = AIOEngine(database=database_name, client=database.client)
+
 
     print(f"Connected to MongoDB: {mongodb_url}")
 
@@ -45,11 +46,15 @@ def get_database() -> AIOEngine:
 # Optional: simple function-based approach
 def get_engine() -> AIOEngine:
     """Get ODMantic engine - simpler approach"""
+    from urllib.parse import quote_plus
+    from motor.motor_asyncio import AsyncIOMotorClient
+    from odmantic import AIOEngine
+
     username = quote_plus("backend_user")
     password = quote_plus("Ecell@2025")
     mongodb_url = f"mongodb+srv://{username}:{password}@cluster0.blyrgyf.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
     database_name = "Rec_Backend"
 
     client = AsyncIOMotorClient(mongodb_url)
-    engine = AIOEngine(motor_client=client, database=database_name)
+    engine = AIOEngine(client, database=database_name)  # ✅ pass client as positional argument
     return engine
