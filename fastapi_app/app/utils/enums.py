@@ -1,10 +1,12 @@
 from enum import Enum
 
-class EmailStatus(Enum):
+class EmailStatus(str,Enum):
     """Email status enumeration"""
     PENDING = "pending"
     SCHEDULED = "scheduled"
     SENT = "sent"
+    FAILED = "failed"
+
 
 class ShortlistStatus(Enum):
     """Shortlist status enumeration"""

@@ -19,11 +19,18 @@ class EmailService:
         print("Received email data:", email_dict)
         
         # Set defaults in service layer
-        email_dict['status'] = EmailStatus.PENDING
-        email_dict['date_time'] = datetime.now()
+        
+        
         email_dict['sent_count'] = 0
         email_dict['failed_count'] = 0
         email_dict['error_message'] = ""
+
+        if email.dict().get('date_time') is None:
+            email_dict['status'] = EmailStatus.SCHEDULED
+            email_dict['date_time'] = datetime.now()
+        else:
+            email_dict['status'] = EmailStatus.PENDING
+
         
         # Create ODMantic email instance
         new_email = Email(**email_dict)
