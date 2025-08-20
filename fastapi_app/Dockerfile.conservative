@@ -1,5 +1,5 @@
-# Ultra-stable Dockerfile using Python 3.10
-FROM python:3.10-slim
+# Ultra-conservative Dockerfile using Python 3.9
+FROM python:3.9-slim
 
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1
@@ -10,8 +10,8 @@ ENV PORT=8000
 WORKDIR /app
 
 # Copy requirements and install dependencies
-COPY requirements.stable.txt requirements.txt
-RUN pip install --no-cache-dir --upgrade pip==23.1.2 \
+COPY requirements.conservative.txt requirements.txt
+RUN pip install --no-cache-dir --upgrade pip==22.3.1 \
     && pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
@@ -20,5 +20,5 @@ COPY . .
 # Expose port
 EXPOSE $PORT
 
-# Run with uvicorn using environment variable for port
+# Run with uvicorn using shell form for environment variable expansion
 CMD python -m uvicorn app.main:app --host 0.0.0.0 --port $PORT
