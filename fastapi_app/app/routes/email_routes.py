@@ -1,32 +1,44 @@
 from fastapi import APIRouter, HTTPException
 from typing import List
 from ..schemas.email_schema import EmailCreate, EmailResponse, EmailUpdate
-from ..services.email_service import EmailService
+from ..services.recruitment_email_service import recruitment_email_service
 
 router = APIRouter(prefix="/emails", tags=["emails"])
 
-@router.post("/", response_model=EmailResponse)
-async def create_email(email: EmailCreate):
-    """Create a new email"""
-    return await EmailService.create_email(email)
+@router.post("/send-otp", response_model=dict)
+async def send_otp_email(email: str, otp: str):
+    """Send OTP email to user"""
+    try:
+        result = await recruitment_email_service.send_login_otp(email, otp)
+        if result["success"]:
+            return {"message": "OTP sent successfully", "email": email}
+        else:
+            raise HTTPException(status_code=500, detail="Failed to send OTP")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/{email_id}", response_model=EmailResponse)
-async def get_email(email_id: str):
-    """Get email by ID"""
-    email = await EmailService.get_email(email_id)
-    if not email:
-        raise HTTPException(status_code=404, detail="Email not found")
-    return email
+@router.post("/send-welcome", response_model=dict)
+async def send_welcome_email(email: str, name: str):
+    """Send welcome email to new user"""
+    try:
+        result = await recruitment_email_service.send_welcome_email(email, name)
+        if result["success"]:
+            return {"message": "Welcome email sent successfully", "email": email}
+        else:
+            raise HTTPException(status_code=500, detail="Failed to send welcome email")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/", response_model=List[EmailResponse])
-async def get_emails():
-    """Get all emails"""
-    return await EmailService.get_emails()
-
-@router.put("/{email_id}/status", response_model=EmailResponse)
-async def update_email_status(email_id: str, update: EmailUpdate):
-    """Update email status"""
-    email = await EmailService.update_email_status(email_id, update)
-    if not email:
-        raise HTTPException(status_code=404, detail="Email not found")
-    return email
+@router.post("/send-interview-reminder", response_model=dict)
+async def send_interview_reminder(email: str, candidate_name: str, interview_date: str, interview_time: str, position: str):
+    """Send interview reminder email"""
+    try:
+        result = await recruitment_email_service.send_interview_reminder(
+            email, candidate_name, interview_date, interview_time, position
+        )
+        if result["success"]:
+            return {"message": "Interview reminder sent successfully", "email": email}
+        else:
+            raise HTTPException(status_code=500, detail="Failed to send interview reminder")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

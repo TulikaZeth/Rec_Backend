@@ -1,10 +1,12 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Depends
 from typing import List
 from ..schemas.user_schema import (
     UserCreate, UserResponse, ShortlistUpdate,
     GDUpdate, PIUpdate, TaskUpdate
 )
 from ..services.user_service import UserService
+from ..utils.auth_middleware import get_current_user, get_current_user_optional
+from ..models.user import User
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -24,8 +26,8 @@ async def create_user(user: UserCreate):
         )
 
 @router.get("/{user_id}", response_model=UserResponse)
-async def get_user(user_id: str):
-    """Get user by ID"""
+async def get_user(user_id: str, current_user: User = Depends(get_current_user)):
+    """Get user by ID (requires authentication)"""
     try:
         user = await UserService.get_user(user_id)
         if not user:
@@ -46,8 +48,8 @@ async def get_user(user_id: str):
         )
 
 @router.get("/", response_model=List[UserResponse])
-async def get_users():
-    """Get all users"""
+async def get_users(current_user: User = Depends(get_current_user)):
+    """Get all users (requires authentication)"""
     try:
         users = await UserService.get_users()
         # Convert each ODMantic model to response schema
@@ -64,8 +66,8 @@ async def get_users():
         )
 
 @router.get("/email/{email}", response_model=UserResponse)
-async def get_user_by_email(email: str):
-    """Get user by email ID"""
+async def get_user_by_email(email: str, current_user: User = Depends(get_current_user)):
+    """Get user by email ID (requires authentication)"""
     try:
         user = await UserService.get_user_by_email(email)
         if not user:
