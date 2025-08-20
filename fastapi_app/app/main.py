@@ -30,10 +30,16 @@ async def root():
     """Root endpoint"""
     return {
         "message": "Welcome to the Recruitment Portal API",
-        "version": settings.APP_VERSION
+        "version": settings.APP_VERSION,
+        "status": "running"
     }
+
 @app.get("/health")
 async def health_check():
-    """Health check endpoint"""
-    return {"status": "ok", "version": settings.APP_VERSION}
+    """Health check endpoint for deployment monitoring"""
+    return {
+        "status": "healthy", 
+        "version": settings.APP_VERSION,
+        "environment": settings.ENVIRONMENT
+    }
     

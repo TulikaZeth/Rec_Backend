@@ -2,26 +2,37 @@ version: '3.8'
 
 services:
   web:
-    build: .
+    build: 
+      context: .
+      dockerfile: Dockerfile
     ports:
-      - "8000:8000"
+      - "${PORT:-8000}:${PORT:-8000}"
     environment:
-      - MONGODB_URL=mongodb://mongo:27017
+      - MONGODB_URL=${MONGODB_URL:-mongodb://mongo:27017}
+      - DATABASE_NAME=${DATABASE_NAME:-recruitment_portal}
+      - SECRET_KEY=${SECRET_KEY:-development-secret-key}
+      - ENVIRONMENT=development
+      - PORT=${PORT:-8000}
     depends_on:
       - mongo
     volumes:
       - .:/app
     networks:
       - recruitment-network
+    restart: unless-stopped
 
   mongo:
-    image: mongo:latest
+    image: mongo:7.0
     ports:
       - "27017:27017"
     volumes:
       - mongodb_data:/data/db
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=password
     networks:
       - recruitment-network
+    restart: unless-stopped
 
 networks:
   recruitment-network:
