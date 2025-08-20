@@ -2,7 +2,7 @@ services:
   - type: web
     name: recruitment-backend
     env: docker
-    dockerfilePath: ./Dockerfile.conservative
+    dockerfilePath: ./Dockerfile.final
     dockerContext: .
     region: oregon
     plan: starter
