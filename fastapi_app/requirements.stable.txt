@@ -1,0 +1,29 @@
+# Ultra-stable FastAPI requirements for guaranteed deployment
+fastapi==0.100.1
+uvicorn[standard]==0.23.2
+
+# Database - MongoDB
+motor==3.1.0
+odmantic==0.9.2
+
+# Data validation and settings
+pydantic==1.10.7
+email-validator==2.0.0
+
+# Environment variables
+python-dotenv==1.0.0
+
+# HTTP client
+httpx==0.24.1
+
+# Password hashing
+passlib[bcrypt]==1.7.4
+
+# Form data handling
+python-multipart==0.0.6
+
+# Logging
+loguru==0.7.0
+
+# Production server
+gunicorn==20.1.0

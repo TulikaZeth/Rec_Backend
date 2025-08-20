@@ -1,5 +1,5 @@
-# Alternative Dockerfile for environments with build issues
-FROM python:3.11-slim
+# Ultra-stable Dockerfile using Python 3.10
+FROM python:3.10-slim
 
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1
@@ -10,8 +10,8 @@ ENV PORT=8000
 WORKDIR /app
 
 # Copy requirements and install dependencies
-COPY requirements.txt .
-RUN pip install --no-cache-dir --upgrade pip \
+COPY requirements.stable.txt requirements.txt
+RUN pip install --no-cache-dir --upgrade pip==23.1.2 \
     && pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
@@ -20,5 +20,5 @@ COPY . .
 # Expose port
 EXPOSE $PORT
 
-# Simple command with uvicorn (fallback)
-CMD python -m uvicorn app.main:app --host 0.0.0.0 --port $PORT
+# Run with uvicorn (most compatible)
+CMD ["python", "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
