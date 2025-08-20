@@ -1,5 +1,5 @@
-# Use Python 3.11 slim image for better compatibility
-FROM python:3.11-slim
+# FINAL FIX - Dockerfile with perfectly compatible MongoDB stack
+FROM python:3.9-slim
 
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1
@@ -9,32 +9,16 @@ ENV PORT=8000
 # Set working directory
 WORKDIR /app
 
-# Install system dependencies including build tools
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends \
-        build-essential \
-        curl \
-        gcc \
-        g++ \
-    && rm -rf /var/lib/apt/lists/*
-
-# Copy requirements file first for better caching
+# Copy requirements and install dependencies
 COPY requirements.txt .
-
-# Upgrade pip and install Python dependencies
-RUN pip install --no-cache-dir --upgrade pip==23.2.1 \
+RUN pip install --no-cache-dir --upgrade pip==22.3.1 \
     && pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
 COPY . .
 
-# Create non-root user for security
-RUN adduser --disabled-password --gecos '' appuser \
-    && chown -R appuser:appuser /app
-USER appuser
-
-# Expose port (Render will inject PORT env variable)
+# Expose port
 EXPOSE $PORT
 
-# Command to run the application with gunicorn for production
-CMD gunicorn app.main:app -w 4 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:$PORT
+# Run with uvicorn using shell form for environment variable expansion
+CMD python -m uvicorn app.main:app --host 0.0.0.0 --port $PORT
