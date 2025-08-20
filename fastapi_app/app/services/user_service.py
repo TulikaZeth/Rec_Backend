@@ -44,6 +44,17 @@ class UserService:
             return None
     
     @staticmethod
+    async def get_user_by_email(email: str) -> Optional[User]:
+        """Get user by email ID"""
+        engine = get_database()
+        try:
+            user = await engine.find_one(User, User.email == email)
+            return user
+        except Exception as e:
+            print(f"Error getting user by email: {e}")
+            return None
+    
+    @staticmethod
     async def get_users() -> List[User]:
         """Get all users"""
         engine = get_database()

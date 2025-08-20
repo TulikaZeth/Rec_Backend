@@ -63,6 +63,28 @@ async def get_users():
             detail=f"Failed to get users: {str(e)}"
         )
 
+@router.get("/email/{email}", response_model=UserResponse)
+async def get_user_by_email(email: str):
+    """Get user by email ID"""
+    try:
+        user = await UserService.get_user_by_email(email)
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found with this email"
+            )
+        # Convert ODMantic model to response schema
+        user_dict = user.dict()
+        user_dict['id'] = str(user.id)  # Convert ObjectId to string
+        return UserResponse(**user_dict)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Failed to get user by email: {str(e)}"
+        )
+
 @router.put("/{user_id}/shortlist", response_model=UserResponse)
 async def update_shortlist(user_id: str, update: ShortlistUpdate):
     """Update user's shortlist status"""
