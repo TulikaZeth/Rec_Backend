@@ -1,5 +1,5 @@
-# Use Python 3.11 slim image for better performance
-FROM python:3.11-slim
+# Use Python 3.10 slim image for better compatibility
+FROM python:3.10-slim
 
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1
@@ -9,18 +9,20 @@ ENV PORT=8000
 # Set working directory
 WORKDIR /app
 
-# Install system dependencies
+# Install system dependencies including build tools
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         build-essential \
         curl \
+        gcc \
+        g++ \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements file
+# Copy requirements file first for better caching
 COPY requirements.txt .
 
-# Install Python dependencies
-RUN pip install --no-cache-dir --upgrade pip \
+# Upgrade pip and install Python dependencies
+RUN pip install --no-cache-dir --upgrade pip==23.2.1 \
     && pip install --no-cache-dir -r requirements.txt
 
 # Copy application code

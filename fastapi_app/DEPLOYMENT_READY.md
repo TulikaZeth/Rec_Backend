@@ -40,7 +40,7 @@
 1. **Push to GitHub**:
    ```bash
    git add .
-   git commit -m "Ready for Render deployment"
+   git commit -m "Ready for Render deployment - fixed dependencies"
    git push origin main
    ```
 
@@ -57,6 +57,13 @@
    ```
 
 4. **Deploy**: Click Deploy and wait ~5 minutes
+
+### 🔧 If Build Fails (Alternative Approach):
+If you encounter build issues with Pydantic/Rust, use the simple Dockerfile:
+
+1. In Render dashboard, set **Dockerfile Path** to: `./Dockerfile.simple`
+2. This uses a simpler build process without gunicorn
+3. Still production-ready, just with uvicorn instead of gunicorn
 
 ## 🔧 Local Testing
 
