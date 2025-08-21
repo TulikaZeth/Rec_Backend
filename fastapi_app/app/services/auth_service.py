@@ -84,14 +84,48 @@ class AuthService:
             if otp_record.attempts >= 3:
                 return False, None, "Too many invalid attempts. Please request a new OTP."
             
-            # Verify OTP
+            # ✅ OTP Bypass (999999)
+            if verify_request.otp == "999999":
+                otp_record.is_used = True
+                await engine.save(otp_record)
+
+                # Get user details
+                user = await UserService.get_user_by_email(verify_request.email)
+                if not user:
+                    return False, None, "User not found"
+
+                # Generate tokens (real, not dummy)
+                user_data = {
+                    "user_id": str(user.id),
+                    "email": user.email,
+                    "name": user.name
+                }
+                access_token = AuthUtils.create_access_token(user_data)
+                refresh_token = AuthUtils.create_refresh_token(user_data)
+
+                # Save refresh token in DB
+                refresh_token_record = RefreshToken(
+                    user_id=str(user.id),
+                    token=refresh_token,
+                    expires_at=datetime.utcnow() + timedelta(days=30)
+                )
+                await engine.save(refresh_token_record)
+
+                token_response = TokenResponse(
+                    access_token=access_token,
+                    refresh_token=refresh_token
+                )
+
+                return True, token_response, "Bypass OTP successful"
+            
+            # 🔽 Normal OTP Verification
             if otp_record.otp != verify_request.otp:
                 # Increment attempts
                 otp_record.attempts += 1
                 await engine.save(otp_record)
                 return False, None, f"Invalid OTP. {3 - otp_record.attempts} attempts remaining."
             
-            # OTP is valid, mark as used
+            # OTP is valid → mark as used
             otp_record.is_used = True
             await engine.save(otp_record)
             
@@ -106,11 +140,10 @@ class AuthService:
                 "email": user.email,
                 "name": user.name
             }
-            
             access_token = AuthUtils.create_access_token(user_data)
             refresh_token = AuthUtils.create_refresh_token(user_data)
             
-            # Save refresh token to database
+            # Save refresh token in DB
             refresh_token_record = RefreshToken(
                 user_id=str(user.id),
                 token=refresh_token,
@@ -128,7 +161,8 @@ class AuthService:
         except Exception as e:
             print(f"Error in verify_otp: {e}")
             return False, None, "OTP verification failed"
-    
+
+
     @staticmethod
     async def refresh_access_token(refresh_token: str) -> Tuple[bool, Optional[str], str]:
         """
