@@ -1,5 +1,5 @@
 from typing import Dict, Any, Optional, List
-from app.utils.emailjs_service import emailjs_service
+from ..utils.resend_service import resend_service
 from loguru import logger
 
 class RecruitmentEmailService:
@@ -11,12 +11,12 @@ class RecruitmentEmailService:
     @staticmethod
     async def send_login_otp(email: str, name: str, otp: str) -> bool:
         """Send OTP for user login"""
-        return await emailjs_service.send_otp_email(email, name, otp)
+        return await resend_service.send_otp_email(email, name, otp)
     
     @staticmethod
     async def send_welcome_email(email: str, name: str) -> bool:
         """Send welcome email to new users"""
-        return await emailjs_service.send_welcome_email(email, name)
+        return await resend_service.send_welcome_email(email, name)
     
     @staticmethod
     async def send_application_confirmation(
@@ -26,7 +26,7 @@ class RecruitmentEmailService:
         application_id: str
     ) -> bool:
         """Send application confirmation email"""
-        return await emailjs_service.send_notification_email(
+        return await resend_service.send_notification_email(
             email, name,
             "Application Received",
             f"Your application for {job_title} has been successfully submitted. "
@@ -43,7 +43,7 @@ class RecruitmentEmailService:
         next_round: str
     ) -> bool:
         """Send shortlist notification"""
-        return await emailjs_service.send_status_update_email(
+        return await resend_service.send_status_update_email(
             email, name,
             "Application Review",
             "Shortlisted",
@@ -63,7 +63,7 @@ class RecruitmentEmailService:
         """Send interview reminder"""
         location_text = location if location != "Online" else f"Online - {meeting_link}"
         
-        return await emailjs_service.send_reminder_email(
+        return await resend_service.send_reminder_email(
             email, name,
             f"{interview_type} Interview",
             date, time, location_text
@@ -81,7 +81,7 @@ class RecruitmentEmailService:
         """Send group discussion reminder"""
         topic_text = f"Topic: {topic}" if topic else "Topic will be provided on the day"
         
-        return await emailjs_service.send_reminder_email(
+        return await resend_service.send_reminder_email(
             email, name,
             "Group Discussion",
             date, time, f"{location}. {topic_text}"
@@ -103,7 +103,7 @@ class RecruitmentEmailService:
             message += f" Expected joining date: {joining_date}."
         message += " HR will contact you with further details."
         
-        return await emailjs_service.send_status_update_email(
+        return await resend_service.send_status_update_email(
             email, name, "Final Selection", "Selected", message
         )
     
@@ -121,7 +121,7 @@ class RecruitmentEmailService:
             message += f" Feedback: {feedback}"
         message += " We encourage you to apply for future opportunities."
         
-        return await emailjs_service.send_status_update_email(
+        return await resend_service.send_status_update_email(
             email, name, stage, "Not Selected", message
         )
     
@@ -137,7 +137,7 @@ class RecruitmentEmailService:
         message = f"Please submit the following documents: {doc_list}. "
         message += f"Deadline: {deadline}. Upload documents through your candidate portal."
         
-        return await emailjs_service.send_notification_email(
+        return await resend_service.send_notification_email(
             email, name,
             "Document Submission Required",
             message, True,
@@ -159,7 +159,7 @@ class RecruitmentEmailService:
         message += f"This offer is valid till {offer_valid_till}. "
         message += "Please check your email for the detailed offer letter."
         
-        return await emailjs_service.send_notification_email(
+        return await resend_service.send_notification_email(
             email, name, "Job Offer", message, True,
             "https://your-portal.com/offer-letter"
         )
@@ -181,7 +181,7 @@ class RecruitmentEmailService:
         
         for recipient in recipients:
             try:
-                success = await emailjs_service.send_notification_email(
+                success = await resend_service.send_notification_email(
                     recipient["email"], recipient["name"],
                     notification_type, message, action_required, action_link
                 )
@@ -202,7 +202,7 @@ class RecruitmentEmailService:
     ) -> bool:
         """Send custom recruitment email"""
         try:
-            return await emailjs_service.send_custom_email(template_type, {
+            return await resend_service.send_custom_email(template_type, {
                 "to_email": email,
                 "to_name": name,
                 "from_name": "Recruitment Portal Team",
