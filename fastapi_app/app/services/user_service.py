@@ -1,10 +1,14 @@
 from typing import List, Optional
 from ..models.user import User
 from ..core.init_db import get_database
-from ..schemas.user_schema import UserCreate, ShortlistUpdate, GDUpdate, PIUpdate, TaskUpdate
+from ..schemas.user_schema import UserCreate, screeningUpdate, GDUpdate, PIUpdate, TaskUpdate
 from odmantic import ObjectId
 
 class UserService:
+    @staticmethod
+    def get_engine():
+        """Get the ODMantic engine instance."""
+        return get_database()
     """Service for handling user operations"""
     
     @staticmethod
@@ -62,8 +66,8 @@ class UserService:
         return list(users)
     
     @staticmethod
-    async def update_shortlist(user_id: str, update: ShortlistUpdate) -> Optional[User]:
-        """Update user's shortlist status"""
+    async def update_screening(user_id: str, update: screeningUpdate) -> Optional[User]:
+        """Update user's screening status"""
         engine = get_database()
         user = await UserService.get_user(user_id)
         if not user:
@@ -72,8 +76,8 @@ class UserService:
         # Convert update to dict
         update_dict = update.dict()
         
-        # Update the shortlisted field
-        user.shortlisted = update_dict
+        # Update the screening field
+        user.screening = update_dict
         
         # Save the updated user
         updated_user = await engine.save(user)

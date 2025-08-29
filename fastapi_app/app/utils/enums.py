@@ -8,8 +8,8 @@ class EmailStatus(str,Enum):
     FAILED = "failed"
 
 
-class ShortlistStatus(Enum):
-    """Shortlist status enumeration"""
+class screeningStatus(Enum):
+    """screening status enumeration"""
     SELECTED = "selected"
     REJECTED = "rejected"
     SCHEDULED = "scheduled"

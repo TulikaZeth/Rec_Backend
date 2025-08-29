@@ -24,10 +24,11 @@ class UserCreate(UserBase):
     domain_pref_one: DomainPreferenceSchema
     domain_pref_two: DomainPreferenceSchema
 
-class ShortlistUpdate(BaseModel):
-    """Schema for updating shortlist status"""
+class screeningUpdate(BaseModel):
+    """Schema for updating screening status"""
     status: str
     datetime: datetime
+    remarks: str
 
 class GDUpdate(BaseModel):
     """Schema for updating GD status"""
@@ -39,7 +40,7 @@ class PIUpdate(BaseModel):
     """Schema for updating PI status"""
     status: str
     datetime: datetime
-    remarks: List[dict] = Field(default_factory=list)
+    remarks: str
 
 class TaskUpdate(BaseModel):
     """Schema for updating task status"""
@@ -51,7 +52,7 @@ class UserResponse(UserBase):
     id: str
     domain_pref_one: Dict[str, Any]
     domain_pref_two: Dict[str, Any]
-    shortlisted: Dict[str, Any] = Field(default_factory=dict)
+    screening: Dict[str, Any] = Field(default_factory=dict)
     gd: Dict[str, Any] = Field(default_factory=dict)
     pi: Dict[str, Any] = Field(default_factory=dict)
     task: Dict[str, Any] = Field(default_factory=dict)
@@ -71,7 +72,7 @@ class User(Model):
     domain_pref_one: Dict[str, Any]
     domain_pref_two: Dict[str, Any]
     # FIX: Use empty dict as default instead of None
-    shortlisted: Dict[str, Any] = OdmanticField(default_factory=dict)
+    screening: Dict[str, Any] = OdmanticField(default_factory=dict)
     gd: Dict[str, Any] = OdmanticField(default_factory=dict)
     pi: Dict[str, Any] = OdmanticField(default_factory=dict)
     task: Dict[str, Any] = OdmanticField(default_factory=dict)

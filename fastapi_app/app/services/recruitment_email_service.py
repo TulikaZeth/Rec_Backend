@@ -36,17 +36,17 @@ class RecruitmentEmailService:
         )
     
     @staticmethod
-    async def send_shortlist_notification(
+    async def send_screening_notification(
         email: str, 
         name: str, 
         job_title: str, 
         next_round: str
     ) -> bool:
-        """Send shortlist notification"""
+        """Send screening notification"""
         return await resend_service.send_status_update_email(
             email, name,
             "Application Review",
-            "Shortlisted",
+            "screening",
             f"You have been selected for {next_round}. Details will be shared shortly."
         )
     

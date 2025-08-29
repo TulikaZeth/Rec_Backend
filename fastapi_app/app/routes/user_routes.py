@@ -1,10 +1,40 @@
-from fastapi import APIRouter, HTTPException, status, Depends
+from fastapi import APIRouter, HTTPException, status, Depends, Body
 from typing import List
 from ..schemas.user_schema import (
-    UserCreate, UserResponse, ShortlistUpdate,
+    UserCreate, UserResponse, screeningUpdate,
     GDUpdate, PIUpdate, TaskUpdate
 )
 from ..services.user_service import UserService
+
+# Inline schema for bulk round update (no extra packages)
+from pydantic import BaseModel, EmailStr
+from typing import List, Optional
+from datetime import datetime
+
+class BulkRoundUpdateRequest(BaseModel):
+    emails: List[EmailStr]
+    screening: Optional[dict] = None  # {"status": str, "datetime": datetime}
+    gd: Optional[dict] = None         # {"status": str, "datetime": datetime, "remarks": str}
+    pi: Optional[dict] = None         # {"status": str, "datetime": datetime, "remarks": list}
+
+
+
+# ...existing code...
+
+from ..utils.auth_middleware import get_current_user, get_current_user_optional
+from ..models.user import User
+
+router = APIRouter(prefix="/users", tags=["users"])
+
+# ...existing route definitions...
+
+from fastapi.responses import JSONResponse
+
+class BulkUpdateResponse(BaseModel):
+    updated: List[EmailStr]
+    failed: List[dict]
+
+
 from ..utils.auth_middleware import get_current_user, get_current_user_optional
 from ..models.user import User
 
@@ -48,7 +78,7 @@ async def get_user(user_id: str, current_user: User = Depends(get_current_user))
         )
 
 @router.get("/", response_model=List[UserResponse])
-async def get_users(current_user: User = Depends(get_current_user)):
+async def get_users():
     """Get all users (requires authentication)"""
     try:
         users = await UserService.get_users()
@@ -87,11 +117,11 @@ async def get_user_by_email(email: str, current_user: User = Depends(get_current
             detail=f"Failed to get user by email: {str(e)}"
         )
 
-@router.put("/{user_id}/shortlist", response_model=UserResponse)
-async def update_shortlist(user_id: str, update: ShortlistUpdate):
-    """Update user's shortlist status"""
+@router.put("/{user_id}/screening", response_model=UserResponse)
+async def update_screening(user_id: str, update: screeningUpdate):
+    """Update user's screening status"""
     try:
-        user = await UserService.update_shortlist(user_id, update)
+        user = await UserService.update_screening(user_id, update)
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -105,7 +135,7 @@ async def update_shortlist(user_id: str, update: ShortlistUpdate):
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Failed to update shortlist: {str(e)}"
+            detail=f"Failed to update screening: {str(e)}"
         )
 
 @router.put("/{user_id}/gd", response_model=UserResponse)
@@ -170,3 +200,46 @@ async def update_task(user_id: str, update: TaskUpdate):
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Failed to update task status: {str(e)}"
         )
+
+@router.put(
+    "/bulk/update-rounds",
+    response_model=BulkUpdateResponse,
+)
+async def bulk_update_rounds(
+    payload: BulkRoundUpdateRequest = Body(
+        ...,
+        example={
+            "emails": ["user1@example.com", "user2@example.com"],
+            "screening": {"status": "passed", "datetime": "2025-08-24T10:00:00", "remarks": "To be scheduled"},
+            "gd": {"status": "pending", "datetime": "2025-08-25T14:00:00", "remarks": "To be scheduled"},
+            "pi": {"status": "not started", "datetime": "2025-08-26T16:00:00", "remarks": "To be scheduled"}
+        }
+    )
+):
+    """
+    Bulk update screening, gd, and pi rounds for multiple users by email.
+    - **emails**: List of user emails to update
+    - **screening**: Dict with status and datetime (optional)
+    - **gd**: Dict with status, datetime, remarks (optional)
+    - **pi**: Dict with status, datetime, remarks (optional)
+    """
+    updated = []
+    failed = []
+    for email in payload.emails:
+        user = await UserService.get_user_by_email(email)
+        if not user:
+            failed.append({"email": email, "reason": "User not found"})
+            continue
+        try:
+            if payload.screening:
+                user.screening = payload.screening
+            if payload.gd:
+                user.gd = payload.gd
+            if payload.pi:
+                user.pi = payload.pi
+            engine = UserService.get_engine()
+            await engine.save(user)
+            updated.append(email)
+        except Exception as e:
+            failed.append({"email": email, "reason": str(e)})
+    return BulkUpdateResponse(updated=updated, failed=failed)

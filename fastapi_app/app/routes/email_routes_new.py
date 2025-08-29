@@ -28,7 +28,7 @@ class StatusUpdateRequest(BaseModel):
     email: EmailStr
     name: str
     job_title: str
-    status: str  # "shortlisted", "selected", "rejected"
+    status: str  # "screening", "selected", "rejected"
     stage: str  # "application", "interview", "final"
     next_round: str = ""
     package: str = ""
@@ -149,10 +149,10 @@ async def send_status_update(
     request: StatusUpdateRequest,
     current_user: User = Depends(get_current_user)
 ):
-    """Send status update email (shortlist, selection, rejection)"""
+    """Send status update email (screening, selection, rejection)"""
     try:
-        if request.status.lower() == "shortlisted":
-            success = await recruitment_email_service.send_shortlist_notification(
+        if request.status.lower() == "screening":
+            success = await recruitment_email_service.send_screening_notification(
                 email=request.email,
                 name=request.name,
                 job_title=request.job_title,
@@ -176,7 +176,7 @@ async def send_status_update(
         else:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid status. Use 'shortlisted', 'selected', or 'rejected'"
+                detail="Invalid status. Use 'screening', 'selected', or 'rejected'"
             )
         
         if success:
