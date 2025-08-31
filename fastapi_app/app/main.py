@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from .core.config import settings
 from .core.init_db import connect_to_mongo, close_mongo_connection
-from .routes import user_routes, email_routes, auth_routes
+from .routes import user_routes, email_routes, auth_routes, admin_routes
 from .routes import email_routes_new
 
 # Create FastAPI app
@@ -23,6 +23,7 @@ async def shutdown_event():
 
 # Include routers
 app.include_router(auth_routes.router, prefix=settings.API_PREFIX)
+app.include_router(admin_routes.router, prefix=settings.API_PREFIX)
 app.include_router(user_routes.router, prefix=settings.API_PREFIX)
 app.include_router(email_routes.router, prefix=settings.API_PREFIX)
 app.include_router(email_routes_new.router, prefix=settings.API_PREFIX)

@@ -8,6 +8,13 @@ class EmailStatus(str,Enum):
     FAILED = "failed"
 
 
+class status(Enum):
+    SELECTED = "selected"
+    REJECTED = "rejected"
+    SCHEDULED = "scheduled"
+    PENDING = "pending"
+    ABSENT = "absent"
+
 class screeningStatus(Enum):
     """screening status enumeration"""
     SELECTED = "selected"
@@ -20,3 +27,10 @@ class TaskStatus(Enum):
     PENDING = "pending"  # Default status
     IN_PROGRESS = "in_progress"
     COMPLETED = "completed"
+
+class UserRole(str, Enum):
+    """User role enumeration for authentication and authorization"""
+    GDPROCTOR = "GDProctor"
+    INTERVIEWER = "Interviewer" 
+    SCREENING = "Screening"
+    SUPERADMIN = "SuperAdmin"

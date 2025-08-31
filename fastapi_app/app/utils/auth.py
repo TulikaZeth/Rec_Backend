@@ -18,6 +18,16 @@ class AuthUtils:
         return ''.join(random.choices(string.digits, k=length))
     
     @staticmethod
+    def hash_password(password: str) -> str:
+        """Hash a password"""
+        return pwd_context.hash(password)
+    
+    @staticmethod
+    def verify_password(plain_password: str, hashed_password: str) -> bool:
+        """Verify a password against its hash"""
+        return pwd_context.verify(plain_password, hashed_password)
+    
+    @staticmethod
     def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
         """Create JWT access token"""
         to_encode = data.copy()

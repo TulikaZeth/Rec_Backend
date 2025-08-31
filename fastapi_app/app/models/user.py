@@ -18,6 +18,7 @@ class UserBase(BaseModel):
     phone: int
     linkedIn: Optional[str] = None
     domains: List[str] = Field(default_factory=list)
+    groupNumber: Optional[int] = None
 
 class UserCreate(UserBase):
     """Schema for creating a new user"""
@@ -71,6 +72,7 @@ class User(Model):
     domains: List[str] = OdmanticField(default_factory=list)
     domain_pref_one: Dict[str, Any]
     domain_pref_two: Dict[str, Any]
+    groupNumber: Optional[int] = OdmanticField(default=None)
     # FIX: Use empty dict as default instead of None
     screening: Dict[str, Any] = OdmanticField(default_factory=dict)
     gd: Dict[str, Any] = OdmanticField(default_factory=dict)
