@@ -17,6 +17,10 @@ class UserBase(BaseModel):
     name: str
     email: EmailStr
     phone: int
+    year: int
+    lib_id: str
+    branch: str
+    why_ecell: str
     linkedIn: Optional[str] = None
     domains: List[str] = Field(default_factory=list)
     groupNumber: Optional[int] = None
@@ -110,6 +114,10 @@ class User(Model):
     name: str
     email: str
     phone: int
+    year: int
+    lib_id: str
+    branch: str
+    why_ecell: str
     linkedIn: Optional[str] = OdmanticField(default="")
     domains: List[str] = OdmanticField(default_factory=list)
     domain_pref_one: Dict[str, Any]

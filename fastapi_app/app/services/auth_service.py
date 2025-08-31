@@ -17,9 +17,12 @@ class AuthService:
         Login user by email and send OTP
         Returns: (success, message)
         """
+        engine = get_database()
+
         try:
             # Check if user exists
-            user = await UserService.get_user_by_email(login_request.email)
+            # user = await UserService.get_user_by_email(login_request.email)
+            user = await engine.find_one(User, User.email == login_request.email)
             if not user:
                 return False, "User not found"
             

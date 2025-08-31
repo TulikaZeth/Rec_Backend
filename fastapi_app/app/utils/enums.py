@@ -34,3 +34,12 @@ class UserRole(str, Enum):
     INTERVIEWER = "Interviewer" 
     SCREENING = "Screening"
     SUPERADMIN = "SuperAdmin"
+
+
+# Domain enum for user domains
+class DomainEnum(str, Enum):
+    TECHNICAL = "Technical"
+    EVENTS = "Events"
+    CORPORATE_RELATIONS = "Corporate Relations"
+    PUBLIC_RELATIONS = "Public Relations"
+    GRAPHICS = "Graphics"

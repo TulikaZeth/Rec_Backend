@@ -10,7 +10,7 @@ from ..services.user_service import UserService
 from pydantic import BaseModel, EmailStr, validator, Field
 from typing import List, Optional
 from datetime import datetime
-from ..utils.enums import status as StatusEnum, TaskStatus
+from ..utils.enums import status as StatusEnum, TaskStatus, DomainEnum
 
 class BulkRoundUpdateRequest(BaseModel):
     emails: List[EmailStr]
@@ -173,6 +173,14 @@ router = APIRouter(prefix="/users", tags=["users"])
 @router.post("/", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 async def create_user(user: UserCreate):
     """Create a new user"""
+    # Validate domains
+    allowed_domains = [d.value for d in DomainEnum]
+    invalid_domains = [d for d in user.domains if d not in allowed_domains]
+    if invalid_domains:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid domains: {invalid_domains}. Allowed domains are: {allowed_domains}"
+        )
     try:
         created_user = await UserService.create_user(user)
         # Convert ODMantic model to dict and convert ObjectId to string
@@ -208,7 +216,7 @@ async def get_user(email: str, current_user: User = Depends(get_current_user)):
         )
 
 @router.get("/", response_model=List[UserResponse])
-async def get_users(current_admin = Depends(require_roles([UserRole.SCREENING, UserRole.SUPERADMIN, UserRole.GDPROCTOR, UserRole.INTERVIEWER]))):
+async def get_users(_current_admin = Depends(require_roles([UserRole.SCREENING, UserRole.SUPERADMIN, UserRole.GDPROCTOR, UserRole.INTERVIEWER])), _current_user: User = Depends(get_current_user)):
     """Get all users (requires authentication)"""
     try:
         users = await UserService.get_users()
