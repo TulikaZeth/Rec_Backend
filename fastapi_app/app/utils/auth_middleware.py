@@ -10,6 +10,8 @@ from ..utils.enums import UserRole
 # Create security scheme
 security = HTTPBearer()
 
+import logging
+
 async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
     """
     Dependency to get current authenticated user from JWT token
@@ -19,27 +21,28 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
-    
     try:
-        # Verify token
+        logging.info(f"[AUTH] Raw token: {credentials.credentials}")
         payload = AuthUtils.verify_token(credentials.credentials)
+        logging.info(f"[AUTH] Decoded payload: {payload}")
         if payload is None or payload.get("type") != "access":
+            logging.warning("[AUTH] Invalid or missing payload/type in token.")
             raise credentials_exception
-        
         user_id: str = payload.get("user_id")
+        logging.info(f"[AUTH] Extracted user_id: {user_id}")
         if user_id is None:
+            logging.warning("[AUTH] user_id missing in token payload.")
             raise credentials_exception
-            
-        # Get user from database
         user = await UserService.get_user(user_id)
+        logging.info(f"[AUTH] User found: {user}")
         if user is None:
+            logging.warning("[AUTH] No user found for user_id from token.")
             raise credentials_exception
-            
         return user
-        
     except HTTPException:
         raise
-    except Exception:
+    except Exception as e:
+        logging.error(f"[AUTH] Exception in get_current_user: {e}")
         raise credentials_exception
 
 async def get_current_admin(credentials: HTTPAuthorizationCredentials = Depends(security)):

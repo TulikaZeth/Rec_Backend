@@ -215,12 +215,54 @@ async def get_user(email: str, current_user: User = Depends(get_current_user)):
             detail=f"Failed to get user: {str(e)}"
         )
 
+
+@router.get("/admin/{email}", response_model=UserResponse)
+async def get_user(email: str, current_admin = Depends(require_roles([UserRole.SCREENING, UserRole.SUPERADMIN, UserRole.GDPROCTOR, UserRole.INTERVIEWER]))):
+    """Get user by email (requires authentication)"""
+    try:
+        user = await UserService.get_user_by_email(email)
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found"
+            )
+        # Convert ODMantic model to response schema
+        user_dict = user.dict()
+        user_dict['id'] = str(user.id)  # Convert ObjectId to string
+        return UserResponse(**user_dict)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Failed to get user: {str(e)}"
+        )
+
+
+
 @router.get("/", response_model=List[UserResponse])
-async def get_users(_current_admin = Depends(require_roles([UserRole.SCREENING, UserRole.SUPERADMIN, UserRole.GDPROCTOR, UserRole.INTERVIEWER])), _current_user: User = Depends(get_current_user)):
-    """Get all users (requires authentication)"""
+async def get_users(current_user: User = Depends(get_current_user)):
+    """Get all users (accessible to all authenticated users and admins)"""
     try:
         users = await UserService.get_users()
         # Convert each ODMantic model to response schema
+        response_users = []
+        for user in users:
+            user_dict = user.dict()
+            user_dict['id'] = str(user.id)  # Convert ObjectId to string
+            response_users.append(UserResponse(**user_dict))
+        return response_users
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get users: {str(e)}"
+        )
+        
+@router.get("/admin/getUsers", response_model=List[UserResponse])
+async def get_users(current_admin = Depends(require_roles([UserRole.SCREENING, UserRole.SUPERADMIN, UserRole.GDPROCTOR, UserRole.INTERVIEWER]))):
+    """Get all users (accessible to all authenticated users and admins)"""
+    try:
+        users = await UserService.get_users()
         response_users = []
         for user in users:
             user_dict = user.dict()
