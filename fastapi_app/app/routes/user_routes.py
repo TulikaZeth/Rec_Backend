@@ -258,13 +258,12 @@ async def get_users(current_user: User = Depends(get_current_user)):
             detail=f"Failed to get users: {str(e)}"
         )
         
-@router.get("/admin/getUsers", response_model=List[UserResponse])
+@router.get("/admin/users", response_model=List[UserResponse])
 async def get_users(current_admin = Depends(require_roles([UserRole.SCREENING, UserRole.SUPERADMIN, UserRole.GDPROCTOR, UserRole.INTERVIEWER]))):
-    """Get all users (accessible to all  admins)"""
-    # Access current_admin to avoid unused variable warning
-    _ = current_admin
+    """Get all users by admin login (accessible to all authenticated admins)"""
     try:
         users = await UserService.get_users()
+        # Convert each ODMantic model to response schema
         response_users = []
         for user in users:
             user_dict = user.dict()
