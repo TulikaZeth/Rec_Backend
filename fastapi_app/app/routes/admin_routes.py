@@ -14,6 +14,23 @@ logging.basicConfig(level=logging.INFO)
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
+# @router.get("/admin/get", response_model=List[UserResponse])
+# async def get_admin_users(current_admin = Depends(require_roles([UserRole.SCREENING, UserRole.SUPERADMIN, UserRole.GDPROCTOR, UserRole.INTERVIEWER]))):
+#     """Get all users by admin login (accessible to all authenticated admins)"""
+#     try:
+#         user_dicts = await UserService.get_users_for_admin()
+#         response_users = []
+#         for user_dict in user_dicts:
+#             response_users.append(UserResponse(**user_dict))
+#         return response_users
+#     except Exception as e:
+#         logging.error(f"Exception in /admin/users: {str(e)}")
+#         raise HTTPException(
+#             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+#             detail=f"Failed to get users: {str(e)}"
+#         )
+
+
 @router.post("/create", response_model=AdminResponse, status_code=status.HTTP_201_CREATED)
 async def create_admin(
     admin_data: AdminCreate,

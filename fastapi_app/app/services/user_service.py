@@ -66,6 +66,23 @@ class UserService:
         return list(users)
     
     @staticmethod
+    async def get_users_for_admin() -> List[dict]:
+        """Get all users formatted for admin response (with string IDs)"""
+        import logging
+        logger = logging.getLogger("user_service")
+        engine = get_database()
+        users = await engine.find(User)
+        
+        formatted_users = []
+        for user in users:
+            user_dict = user.dict()
+            user_dict['id'] = str(user.id)
+            formatted_users.append(user_dict)
+        
+        logger.info(f"Fetched {len(formatted_users)} users for admin")
+        return formatted_users
+    
+    @staticmethod
     async def get_users_by_group(group_number: int) -> List[User]:
         """Get all users by group number"""
         engine = get_database()

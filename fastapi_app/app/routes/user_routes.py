@@ -5,6 +5,7 @@ from ..schemas.user_schema import (
     GDUpdate, PIUpdate, TaskUpdate
 )
 from ..services.user_service import UserService
+from ..core.init_db import get_database
 
 # Inline schema for bulk round update (no extra packages)
 from pydantic import BaseModel, EmailStr, validator, Field
@@ -52,6 +53,7 @@ class BulkRoundUpdateRequest(BaseModel):
 from ..utils.auth_middleware import get_current_user, get_current_user_optional, require_roles
 from ..models.user import User
 from ..utils.enums import UserRole
+import logging
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -164,10 +166,6 @@ class BulkCreateRoundsResponse(BaseModel):
     failed: List[dict] = Field(default_factory=list)
 
 
-from ..utils.auth_middleware import get_current_user, get_current_user_optional
-from ..models.user import User
-import logging
-
 router = APIRouter(prefix="/users", tags=["users"])
 
 @router.post("/", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
@@ -191,6 +189,22 @@ async def create_user(user: UserCreate):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Failed to create user: {str(e)}"
+        )
+
+@router.get("/get", response_model=List[UserResponse])
+async def get_admin_users(current_admin = Depends(require_roles([UserRole.SCREENING, UserRole.SUPERADMIN, UserRole.GDPROCTOR, UserRole.INTERVIEWER]))):
+    """Get all users - admin endpoint"""
+    try:
+        users = await UserService.get_users_for_admin()
+        # Users are already formatted as dicts with string IDs
+        response_users = []
+        for user_dict in users:
+            response_users.append(UserResponse(**user_dict))
+        return response_users
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get users: {str(e)}"
         )
 
 @router.get("/{email}", response_model=UserResponse)
@@ -257,24 +271,8 @@ async def get_users(current_user: User = Depends(get_current_user)):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get users: {str(e)}"
         )
-        
-@router.get("/admin/users", response_model=List[UserResponse])
-async def get_users(current_admin = Depends(require_roles([UserRole.SCREENING, UserRole.SUPERADMIN, UserRole.GDPROCTOR, UserRole.INTERVIEWER]))):
-    """Get all users by admin login (accessible to all authenticated admins)"""
-    try:
-        users = await UserService.get_users()
-        # Convert each ODMantic model to response schema
-        response_users = []
-        for user in users:
-            user_dict = user.dict()
-            user_dict['id'] = str(user.id)  # Convert ObjectId to string
-            response_users.append(UserResponse(**user_dict))
-        return response_users
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get users: {str(e)}"
-        )
+
+
 
 @router.get("/group/{group_number}", response_model=List[UserResponse])
 async def get_users_by_group(

@@ -75,3 +75,5 @@ class AdminService:
             return await engine.find_one(Admin, Admin.email == email)
         except Exception:
             return None
+        
+    
