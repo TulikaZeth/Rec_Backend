@@ -260,7 +260,9 @@ async def get_users(current_user: User = Depends(get_current_user)):
         
 @router.get("/admin/getUsers", response_model=List[UserResponse])
 async def get_users(current_admin = Depends(require_roles([UserRole.SCREENING, UserRole.SUPERADMIN, UserRole.GDPROCTOR, UserRole.INTERVIEWER]))):
-    """Get all users (accessible to all authenticated users and admins)"""
+    """Get all users (accessible to all  admins)"""
+    # Access current_admin to avoid unused variable warning
+    _ = current_admin
     try:
         users = await UserService.get_users()
         response_users = []
