@@ -1,7 +1,7 @@
 from typing import List, Optional
 from ..models.user import User
 from ..core.init_db import get_database
-from ..schemas.user_schema import UserCreate, screeningUpdate, GDUpdate, PIUpdate, TaskUpdate
+from ..schemas.user_schema import UserCreate, screeningUpdate, GDUpdate, PIUpdate, TaskUpdate, ShortlistRequest, TaskStatusUpdate
 from odmantic import ObjectId
 
 class UserService:
@@ -256,12 +256,45 @@ class UserService:
         user = await UserService.get_user_by_email(email)
         if not user:
             return None
-            
+        
         # Convert update to dict
         update_dict = update.dict()
         
+        # Get existing task data or create empty structure
+        current_task = user.task if user.task else {"status": "", "tasks": []}
+        
+        # Update status
+        current_task["status"] = update_dict["status"]
+        
+        # Handle tasks array - add new or update existing based on domain
+        if "tasks" not in current_task:
+            current_task["tasks"] = []
+        
+        # Process each new task
+        for new_task in update_dict["tasks"]:
+            domain = new_task["domain"]
+            url = str(new_task["url"])  # Convert HttpUrl to string
+            
+            # Check if a task with this domain already exists
+            existing_task_index = None
+            for i, existing_task in enumerate(current_task["tasks"]):
+                if existing_task.get("domain") == domain:
+                    existing_task_index = i
+                    break
+            
+            # Update existing task or add new one
+            if existing_task_index is not None:
+                # Update existing task
+                current_task["tasks"][existing_task_index]["url"] = url
+            else:
+                # Add new task
+                current_task["tasks"].append({
+                    "domain": domain,
+                    "url": url
+                })
+        
         # Update the task field
-        user.task = update_dict
+        user.task = current_task
         
         # Save the updated user
         updated_user = await engine.save(user)
@@ -510,3 +543,147 @@ class UserService:
             "batches": batches,
             "failed": failed
         }
+    
+    @staticmethod
+    async def toggle_shortlist_users(emails: List[str]) -> dict:
+        """Toggle shortlist status for multiple users and manage tasks"""
+        engine = get_database()
+        updated_users = []
+        failed_users = []
+        
+        for email in emails:
+            try:
+                user = await UserService.get_user_by_email(email)
+                if not user:
+                    failed_users.append({"email": email, "reason": "User not found"})
+                    continue
+                
+                # Get current shortlisted status, default to False if field doesn't exist
+                current_shortlisted = getattr(user, 'shortlisted', False)
+                
+                # Toggle shortlisted status
+                user.shortlisted = not current_shortlisted
+                
+                if user.shortlisted:
+                    # User is being shortlisted - create tasks for all domains
+                    tasks = []
+                    for domain in user.domains:
+                        tasks.append({
+                            "status": "pending",
+                            "domain": domain,
+                            "url": ""
+                        })
+                    
+                    user.task = {
+                        "status": "pending",
+                        "tasks": tasks
+                    }
+                else:
+                    # User is being un-shortlisted - remove tasks
+                    user.task = {}
+                
+                # Save updated user
+                updated_user = await engine.save(user)
+                updated_users.append(updated_user.email)
+                
+            except Exception as e:
+                failed_users.append({"email": email, "reason": str(e)})
+        
+        return {
+            "updated": updated_users,
+            "failed": failed_users
+        }
+    
+    @staticmethod
+    async def update_task_status_by_email(email: str, task_update: TaskStatusUpdate) -> Optional[User]:
+        """Update specific task status to completed and add URL"""
+        engine = get_database()
+        user = await UserService.get_user_by_email(email)
+        if not user:
+            return None
+        
+        # Get shortlisted status, default to False if field doesn't exist
+        is_shortlisted = getattr(user, 'shortlisted', False)
+        
+        if not is_shortlisted:
+            raise ValueError("User is not shortlisted")
+        
+        # Get current task data
+        current_task = user.task if user.task else {"status": "pending", "tasks": []}
+        
+        # Find and update the specific task
+        task_found = False
+        for task in current_task.get("tasks", []):
+            if task.get("domain") == task_update.domain:
+                task["status"] = "completed"
+                task["url"] = str(task_update.url)
+                task_found = True
+                break
+        
+        if not task_found:
+            raise ValueError(f"Task with domain '{task_update.domain}' not found")
+        
+        # Check if all tasks are completed
+        all_completed = all(
+            task.get("status") == "completed" 
+            for task in current_task.get("tasks", [])
+        )
+        
+        if all_completed:
+            current_task["status"] = "completed"
+        else:
+            current_task["status"] = "in_progress"
+        
+        # Update the task field
+        user.task = current_task
+        
+        # Save the updated user
+        updated_user = await engine.save(user)
+        return updated_user
+    
+    @staticmethod
+    async def migrate_add_shortlisted_field() -> dict:
+        """Migration function to add shortlisted field to all existing users"""
+        engine = get_database()
+        updated_count = 0
+        failed_count = 0
+        
+        try:
+            # Use MongoDB operations directly for the migration
+            from pymongo import UpdateOne
+            
+            # Get the MongoDB collection directly
+            collection = engine.get_collection(User)
+            
+            # Find all documents that don't have the shortlisted field
+            documents_without_field = await collection.count_documents({"shortlisted": {"$exists": False}})
+            
+            if documents_without_field == 0:
+                return {
+                    "message": "Migration completed - no users needed updating",
+                    "updated_users": 0,
+                    "failed_users": 0
+                }
+            
+            # Update all documents that don't have the shortlisted field
+            result = await collection.update_many(
+                {"shortlisted": {"$exists": False}},
+                {"$set": {"shortlisted": False}}
+            )
+            
+            updated_count = result.modified_count
+            
+            return {
+                "message": "Migration completed",
+                "updated_users": updated_count,
+                "failed_users": 0,
+                "documents_found_without_field": documents_without_field
+            }
+            
+        except Exception as e:
+            return {
+                "message": "Migration failed",
+                "error": str(e),
+                "updated_users": updated_count,
+                "failed_users": failed_count
+            }

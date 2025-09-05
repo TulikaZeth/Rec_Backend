@@ -61,6 +61,7 @@ class UserResponse(UserBase):
     gd: Dict[str, Any] = Field(default_factory=dict)
     pi: Dict[str, Any] = Field(default_factory=dict)
     task: Dict[str, Any] = Field(default_factory=dict)
+    shortlisted: bool = Field(default=False)
 
     class Config:
         from_attributes = True
@@ -86,6 +87,7 @@ class User(Model):
     gd: Dict[str, Any] = OdmanticField(default_factory=dict)
     pi: Dict[str, Any] = OdmanticField(default_factory=dict)
     task: Dict[str, Any] = OdmanticField(default_factory=dict)
+    shortlisted: bool = OdmanticField(default=False)
 
     class Config:
         # This is important for ODMantic models

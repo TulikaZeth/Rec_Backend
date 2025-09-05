@@ -1,9 +1,9 @@
 # ----------------- Imports -----------------
-from pydantic import BaseModel, EmailStr, Field, validator
+from pydantic import BaseModel, EmailStr, Field, validator, HttpUrl
 from typing import List, Optional, Dict, Any
 from datetime import datetime
 from odmantic import Model, Field as OdmanticField
-from ..utils.enums import status, TaskStatus
+from ..utils.enums import status, TaskStatus, DomainEnum
 
 # ----------------- Pydantic Schemas -----------------
 
@@ -82,16 +82,51 @@ class PIUpdate(BaseModel):
             raise ValueError(f'Status must be one of: {[s.value for s in status]}')
         return v
 
+class TaskItem(BaseModel):
+    """Schema for individual task item"""
+    domain: str = Field(..., description="Domain for the task")
+    url: HttpUrl = Field(..., description="URL for the task submission")
+    
+    @validator('domain')
+    def validate_domain(cls, v):
+        """Validate that domain is one of the allowed DomainEnum values"""
+        if v not in [d.value for d in DomainEnum]:
+            raise ValueError(f'Domain must be one of: {[d.value for d in DomainEnum]}')
+        return v
+
 class TaskUpdate(BaseModel):
     """Schema for updating task status"""
     status: str
-    tasks: List[dict] = Field(default_factory=list)
+    tasks: List[TaskItem] = Field(default_factory=list, description="List of tasks with domain and URL")
     
     @validator('status')
     def validate_status(cls, v):
         """Validate that status is one of the allowed TaskStatus values"""
         if v not in [ts.value for ts in TaskStatus]:
             raise ValueError(f'Status must be one of: {[ts.value for ts in TaskStatus]}')
+        return v
+
+class ShortlistRequest(BaseModel):
+    """Schema for shortlisting users"""
+    emails: List[EmailStr] = Field(..., description="List of user emails to shortlist/unshortlist")
+    
+    class Config:
+        schema_extra = {
+            "example": {
+                "emails": ["user1@example.com", "user2@example.com"]
+            }
+        }
+
+class TaskStatusUpdate(BaseModel):
+    """Schema for updating specific task status and URL"""
+    domain: str = Field(..., description="Domain of the task to update")
+    url: HttpUrl = Field(..., description="URL for the completed task")
+    
+    @validator('domain')
+    def validate_domain(cls, v):
+        """Validate that domain is one of the allowed DomainEnum values"""
+        if v not in [d.value for d in DomainEnum]:
+            raise ValueError(f'Domain must be one of: {[d.value for d in DomainEnum]}')
         return v
 
 class UserResponse(UserBase):
@@ -103,6 +138,7 @@ class UserResponse(UserBase):
     gd: Dict[str, Any] = Field(default_factory=dict)
     pi: Dict[str, Any] = Field(default_factory=dict)
     task: Dict[str, Any] = Field(default_factory=dict)
+    shortlisted: bool = Field(default=False)
 
     class Config:
         from_attributes = True
@@ -128,6 +164,7 @@ class User(Model):
     gd: Dict[str, Any] = OdmanticField(default_factory=dict)
     pi: Dict[str, Any] = OdmanticField(default_factory=dict)
     task: Dict[str, Any] = OdmanticField(default_factory=dict)
+    shortlisted: bool = OdmanticField(default=False)
 
     class Config:
         # This is important for ODMantic models

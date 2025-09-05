@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, status, Depends, Body
 from typing import List
 from ..schemas.user_schema import (
     UserCreate, UserResponse, screeningUpdate,
-    GDUpdate, PIUpdate, TaskUpdate
+    GDUpdate, PIUpdate, TaskUpdate, ShortlistRequest, TaskStatusUpdate
 )
 from ..services.user_service import UserService
 from ..core.init_db import get_database
@@ -383,7 +383,7 @@ async def update_pi(email: str, update: PIUpdate, current_admin = Depends(requir
 
 @router.put("/{email}/task", response_model=UserResponse)
 async def update_task(email: str, update: TaskUpdate, current_user: User = Depends(get_current_user)):
-    """Update user's task status"""
+    """Update user's task status and tasks. Adds new tasks or updates existing ones based on domain."""
     try:
         user = await UserService.update_task_by_email(email, update)
         if not user:
@@ -709,4 +709,71 @@ async def update_user_pi_by_role(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Failed to update PI status: {str(e)}"
+        )
+
+# Shortlist functionality routes
+@router.post("/shortlist", response_model=dict)
+async def toggle_shortlist_users(
+    request: ShortlistRequest,
+    current_admin = Depends(require_roles([UserRole.SUPERADMIN]))
+):
+    """Toggle shortlist status for multiple users. Creates tasks for shortlisted users, removes for un-shortlisted."""
+    try:
+        result = await UserService.toggle_shortlist_users(request.emails)
+        return result
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Failed to toggle shortlist status: {str(e)}"
+        )
+
+@router.put("/{email}/task-status", response_model=UserResponse)
+async def update_task_status(
+    email: str, 
+    task_update: TaskStatusUpdate, 
+    current_user: User = Depends(get_current_user)
+):
+    """Update specific task status to completed and add URL for shortlisted users."""
+    try:
+        # Check if the logged-in user can only update their own tasks
+        if current_user.email != email:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You can only update your own tasks"
+            )
+        
+        user = await UserService.update_task_status_by_email(email, task_update)
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found"
+            )
+        user_dict = user.dict()
+        user_dict['id'] = str(user.id)
+        return UserResponse(**user_dict)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Failed to update task status: {str(e)}"
+        )
+
+@router.post("/migrate/add-shortlisted", response_model=dict)
+async def migrate_add_shortlisted_field(
+    current_admin = Depends(require_roles([UserRole.SUPERADMIN]))
+):
+    """Migration endpoint to add shortlisted field to all existing users (SuperAdmin only)"""
+    try:
+        result = await UserService.migrate_add_shortlisted_field()
+        return result
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Migration failed: {str(e)}"
         )
