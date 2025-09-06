@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, status, Depends
 from ..models.admin import AdminCreate, AdminLogin, AdminResponse
-from ..models.auth import TokenResponse
+from ..models.auth import TokenResponse, RefreshTokenRequest
 from ..services.admin_service import AdminService
 from ..utils.auth import AuthUtils
 from ..utils.auth_middleware import get_current_admin, require_roles
@@ -108,6 +108,30 @@ async def admin_login(login_data: AdminLogin):
     logger.info(f"🔥 LOGIN RESPONSE READY")
     
     return response
+
+@router.post("/refresh", response_model=dict, status_code=status.HTTP_200_OK)
+async def refresh_admin_token(refresh_request: RefreshTokenRequest):
+    """
+    Refresh admin access token using refresh token
+    """
+    logger.info(f"🔥 ADMIN REFRESH TOKEN REQUEST")
+    
+    success, new_access_token, message = await AdminService.refresh_access_token(refresh_request.refresh_token)
+    
+    if not success:
+        logger.warning(f"🔥 REFRESH FAILED - Reason: {message}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=message
+        )
+    
+    logger.info(f"🔥 REFRESH SUCCESSFUL")
+    
+    return {
+        "access_token": new_access_token,
+        "token_type": "bearer",
+        "message": message
+    }
 
 @router.get("/me", response_model=AdminResponse)
 async def get_current_admin_info(current_admin = Depends(get_current_admin)):

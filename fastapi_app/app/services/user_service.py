@@ -102,17 +102,8 @@ class UserService:
         
         # Handle domain updates if provided
         if update.domains is not None:
-            # Check for existing domains to prevent duplicates
-            existing_domains = set(user.domains) if user.domains else set()
-            new_domains = set(update.domains)
-            
-            # Find domains that already exist
-            duplicate_domains = existing_domains.intersection(new_domains)
-            if duplicate_domains:
-                raise ValueError(f"The following domains already exist for this user: {', '.join(duplicate_domains)}")
-            
-            # Add new domains to existing ones
-            user.domains = list(existing_domains.union(new_domains))
+            # Overwrite existing domains with new ones from payload
+            user.domains = update.domains
             
             # Remove domains from update_dict since we handle it separately
             update_dict.pop('domains', None)
@@ -137,17 +128,8 @@ class UserService:
         
         # Handle domain updates if provided
         if update.domains is not None:
-            # Check for existing domains to prevent duplicates
-            existing_domains = set(user.domains) if user.domains else set()
-            new_domains = set(update.domains)
-            
-            # Find domains that already exist
-            duplicate_domains = existing_domains.intersection(new_domains)
-            if duplicate_domains:
-                raise ValueError(f"The following domains already exist for this user: {', '.join(duplicate_domains)}")
-            
-            # Add new domains to existing ones
-            user.domains = list(existing_domains.union(new_domains))
+            # Overwrite existing domains with new ones from payload
+            user.domains = update.domains
             
             # Remove domains from update_dict since we handle it separately
             update_dict.pop('domains', None)
@@ -687,44 +669,3 @@ class UserService:
                 "updated_users": updated_count,
                 "failed_users": failed_count
             }
-
-    @staticmethod
-    async def get_group_statistics() -> dict:
-        """Get all groups with their student counts"""
-        engine = get_database()
-        
-        try:
-            # Get all users with group numbers
-            users = await engine.find(User, {"groupNumber": {"$ne": None}})
-            
-            # Create a dictionary to count students per group
-            group_counts = {}
-            
-            for user in users:
-                group_num = user.groupNumber
-                if group_num is not None:
-                    if group_num not in group_counts:
-                        group_counts[group_num] = 0
-                    group_counts[group_num] += 1
-            
-            # Convert to sorted list of dictionaries
-            group_stats = []
-            for group_num in sorted(group_counts.keys()):
-                group_stats.append({
-                    "groupNumber": group_num,
-                    "studentCount": group_counts[group_num]
-                })
-            
-            # Also get count of users without groups
-            users_without_group = await engine.count(User, {"$or": [{"groupNumber": None}, {"groupNumber": {"$exists": False}}]})
-            
-            return {
-                "groups": group_stats,
-                "totalGroups": len(group_stats),
-                "totalStudentsWithGroups": sum(group_counts.values()),
-                "studentsWithoutGroup": users_without_group,
-                "totalStudents": len(users) + users_without_group
-            }
-            
-        except Exception as e:
-            raise Exception(f"Failed to get group statistics: {str(e)}")

@@ -777,17 +777,3 @@ async def migrate_add_shortlisted_field(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Migration failed: {str(e)}"
         )
-
-@router.get("/groups/statistics", response_model=dict)
-async def get_group_statistics(
-    current_admin = Depends(require_roles([UserRole.SUPERADMIN, UserRole.GDPROCTOR, UserRole.INTERVIEWER, UserRole.SCREENING]))
-):
-    """Get all groups with their student counts (Admin access only)"""
-    try:
-        result = await UserService.get_group_statistics()
-        return result
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get group statistics: {str(e)}"
-        )

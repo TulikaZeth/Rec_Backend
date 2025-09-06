@@ -75,5 +75,43 @@ class AdminService:
             return await engine.find_one(Admin, Admin.email == email)
         except Exception:
             return None
-        
     
+    @staticmethod
+    async def refresh_access_token(refresh_token: str) -> Tuple[bool, Optional[str], str]:
+        """
+        Refresh access token for admin using refresh token
+        Returns: (success, new_access_token, message)
+        """
+        try:
+            # Verify refresh token
+            payload = AuthUtils.verify_token(refresh_token)
+            if not payload or payload.get("type") != "refresh":
+                return False, None, "Invalid refresh token"
+            
+            # Check if the token contains admin_id (admin token) vs user_id (user token)
+            admin_id = payload.get("admin_id")
+            if not admin_id:
+                return False, None, "Invalid admin refresh token"
+            
+            # Get admin to verify they still exist and are active
+            admin = await AdminService.get_admin(admin_id)
+            if not admin:
+                return False, None, "Admin not found"
+            
+            if not admin.is_active:
+                return False, None, "Admin account is deactivated"
+            
+            # Generate new access token
+            admin_data = {
+                "admin_id": str(admin.id),
+                "email": admin.email,
+                "role": admin.role.value
+            }
+            
+            new_access_token = AuthUtils.create_access_token(admin_data)
+            
+            return True, new_access_token, "Admin token refreshed successfully"
+            
+        except Exception as e:
+            print(f"Error in admin refresh_access_token: {e}")
+            return False, None, "Token refresh failed"
